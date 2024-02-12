@@ -1,3 +1,5 @@
+import type { LinksFunction } from "@remix-run/node";
+import { json } from "@remix-run/node";
 import {
   Form,
   Links,
@@ -5,9 +7,40 @@ import {
   Meta,
   Scripts,
   ScrollRestoration,
+  Outlet,
+  Link,
+  useLoaderData,
 } from "@remix-run/react";
 
+import { getContacts } from "./data";
+
+import appStyleHref from "./app.css";
+
+export const loader = async () => {
+  const contacts = await getContacts();
+  return json({ contacts });
+};
+
+export const links: LinksFunction = () => [
+  {
+    rel: "stylesheet",
+    href: appStyleHref,
+  },
+];
+
+interface contact {
+  id: string;
+  first: String;
+  last: String;
+  avatar: String;
+  twitter: String;
+  notes: String;
+  favorite: Boolean;
+}
+
 export default function App() {
+  const { contacts } = useLoaderData<any>();
+
   return (
     <html lang="en">
       <head>
@@ -35,17 +68,33 @@ export default function App() {
             </Form>
           </div>
           <nav>
-            <ul>
-              <li>
-                <a href={`/contacts/1`}>Your Name</a>
-              </li>
-              <li>
-                <a href={`/contacts/2`}>Your Friend</a>
-              </li>
-            </ul>
+            {contacts.length ? (
+              <ul>
+                {contacts.map((contact: contact, key: number) => (
+                  <li key={key}>
+                    <Link to={`contacts/${contact.id}`}>
+                      {contact.first || contact.last ? (
+                        <>
+                          {contact.first} {contact.last}
+                        </>
+                      ) : (
+                        <i>No Name</i>
+                      )}{" "}
+                      {contact.favorite ? <span>★</span> : null}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p>
+                <i>No contacts</i>
+              </p>
+            )}
           </nav>
         </div>
-
+        <div id="detail">
+          <Outlet />
+        </div>
         <ScrollRestoration />
         <Scripts />
         <LiveReload />
